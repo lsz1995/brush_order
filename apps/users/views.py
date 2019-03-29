@@ -135,7 +135,7 @@ class RechargeOrderViewset(CreateModelMixin,viewsets.GenericViewSet):
     def get_queryset(self):
 
 
-        return RechargeOrder.objects.filter(user=self.request.user.id)#获取当前用户的订单
+        return RechargeOrder.objects.filter(user=self.request.user.id).order_by('id')#获取当前用户的订单
 
 
     def list(self, request, *args, **kwargs):
@@ -181,7 +181,7 @@ class RechargeOrderSureViewset(mixins.UpdateModelMixin,viewsets.GenericViewSet):
             raise serializers.ValidationError("只有管理员能更改充值订单状态")
 
 
-        return RechargeOrder.objects.all()#获取当前用户的订单
+        return RechargeOrder.objects.all().order_by('id')#获取当前用户的订单
 
 
     def list(self, request, *args, **kwargs):
@@ -225,7 +225,7 @@ class WithdrawOrderViewset(CreateModelMixin,viewsets.GenericViewSet):
         # print(self.request.user)
         # activity = User.objects.(user=self.request.user.id)
 
-        return WithdrawOrder.objects.filter(user=self.request.user.id)#获取当前用户的订单
+        return WithdrawOrder.objects.filter(user=self.request.user.id).order_by('id')#获取当前用户的订单
 
 
     def list(self, request, *args, **kwargs):
@@ -244,11 +244,11 @@ class WithdrawOrderViewset(CreateModelMixin,viewsets.GenericViewSet):
 
 class WithdrawOrderSureViewset(mixins.UpdateModelMixin,viewsets.GenericViewSet):
     """
-    充值订单创建与管理
+    提现订单创建与管理
     list:
-        管理员查看所有充值订单
+        管理员查看所有提现订单
     updata:
-        管理员确认充值订单
+        管理员确认 提现充值订单
     """
     permission_classes = (IsAuthenticated)#需要登入
     authentication_classes = (JSONWebTokenAuthentication, authentication.SessionAuthentication)#验证方式
@@ -268,11 +268,11 @@ class WithdrawOrderSureViewset(mixins.UpdateModelMixin,viewsets.GenericViewSet):
 
     def get_queryset(self):
 
-        if self.request.user.user_type !=0:
+        if self.request.user.user_type != 0:
             raise serializers.ValidationError("只有管理员能更改提现订单状态")
 
 
-        return WithdrawOrder.objects.all()#获取当前用户的订单
+        return WithdrawOrder.objects.all().order_by('id')#获取所有的订单
 
 
     def list(self, request, *args, **kwargs):
@@ -288,7 +288,23 @@ class WithdrawOrderSureViewset(mixins.UpdateModelMixin,viewsets.GenericViewSet):
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
+    def update(self, request, *args, **kwargs):
 
+
+
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        if getattr(instance, '_prefetched_objects_cache', None):
+            # If 'prefetch_related' has been applied to a queryset, we need to
+            # forcibly invalidate the prefetch cache on the instance.
+            instance._prefetched_objects_cache = {}
+
+        return Response(serializer.data)
 
 
 class StoreViewset(viewsets.ModelViewSet):
@@ -315,4 +331,17 @@ class StoreViewset(viewsets.ModelViewSet):
     serializer_class = StoreSerializer#序列化方法
 
     def get_queryset(self):
-        return Store.objects.filter(user=self.request.user.id)#获取当前用户的收货地址
+        return Store.objects.filter(user=self.request.user.id).order_by('id')#获取当前用户的收货地址
+
+    def list(self, request, *args, **kwargs):
+        print(request.data)
+
+        queryset = self.filter_queryset(self.get_queryset())
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)

@@ -21,7 +21,7 @@ class UserDetailSerializer(serializers.ModelSerializer):##获取详情
 
     class Meta:
         model = User
-        fields = ("id",'user',"username", "qq_number", "email", "mobile",'balance')
+        fields = ("id",'user',"username", "qq_number", "email", "mobile",'balance','user_type','date_joined')
 
 
 
@@ -173,6 +173,7 @@ class UserRegSerializer(serializers.ModelSerializer):#    ModelSerializer    注
         if mobile_records:
 
             raise serializers.ValidationError("电话号码已存在")
+
         # user_records = User.objects.filter(username=attrs['username'])
         #
         # if user_records:
@@ -185,7 +186,7 @@ class UserRegSerializer(serializers.ModelSerializer):#    ModelSerializer    注
     class Meta:
         model = User
         # fields = ("username", "code",'mobile',"password")
-        fields = ("username", "mobile","password",'email','qq_number','Be_Invite_code')
+        fields = ("username", "mobile","password",'email','qq_number','Be_Invite_code','user_type')
 
 
 class RechargeSerializer(serializers.ModelSerializer):
@@ -221,7 +222,7 @@ class RechargeSureSerializer(serializers.ModelSerializer):
 
 
 
-    def update(self, instance, validated_data):  #完成订单后 分钱
+    def update(self, instance, validated_data):  #确认订单后给 充值用户加钱
 
 
         if instance.state ==True:
@@ -295,9 +296,18 @@ class WithdrawSureSerializer(serializers.ModelSerializer):
         default=serializers.CurrentUserDefault()
     )
     add_time = serializers.DateTimeField(read_only=True, format='%Y-%m-%d %H:%M')
+
     def validate_state(self, state):  # 验证修改提现订单状态
+
+
         if state ==False:
             raise serializers.ValidationError("状态未改变")
+        return state
+
+
+
+
+
     class Meta:
         model = WithdrawOrder
         fields = ("id", "user", "money", "Bank_number",'name','arrival_money','add_time','state')
@@ -319,6 +329,9 @@ class StoreSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("必须由管理员审核")
 
         return attrs
+
+
+
 
     class Meta:
         model = Store
