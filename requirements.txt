@@ -33,7 +33,7 @@ pipreqs==0.4.9
 pycryptodome==3.7.2
 PyJWT==1.7.1
 pytz==2018.7
-PyYAML==3.13
+PyYAML==5.4
 raven==6.9.0
 redis==3.0.1
 requests==2.21.0
